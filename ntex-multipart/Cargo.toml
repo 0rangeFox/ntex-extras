@@ -23,7 +23,6 @@ tempfile = ["dep:tempfile", "tokio/fs"]
 
 [dependencies]
 ntex = "3"
-ntex-http = "1"
 ntex-files = "3"
 ntex-multipart-derive = { version = "=3.1.0", optional = true }
 derive_more = { version = "2", features = ["deref", "deref_mut", "error", "from"] }
