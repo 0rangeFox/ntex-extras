@@ -351,8 +351,8 @@ impl fmt::Display for ContentDisposition {
 #[cfg(test)]
 mod tests {
     use super::{ContentDisposition, DispositionParam, DispositionType, Header};
-    use crate::header::{Charset, Raw};
     use crate::header::parsing::ExtendedValue;
+    use crate::header::{Charset, Raw};
 
     #[test]
     fn test_parse_header() {
