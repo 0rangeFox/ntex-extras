@@ -63,7 +63,7 @@ pub fn fmt_comma_delimited<T: Display>(f: &mut fmt::Formatter, parts: &[T]) -> f
 
 /// An extended header parameter value (i.e., tagged with a character set and optionally,
 /// a language), as defined in [RFC 5987](https://tools.ietf.org/html/rfc5987#section-3.2).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExtendedValue {
     /// The character set that is used to encode the `value` to a string.
     pub charset: Charset,
