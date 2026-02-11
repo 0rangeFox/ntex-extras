@@ -35,7 +35,7 @@
 //!     web::HttpResponse::Ok().finish()
 //! }
 //!
-//! let app = web::App::new().wrap(IdentityService::new(
+//! let app = web::App::new().middleware(IdentityService::new(
 //!     // <- create identity middleware
 //!     CookieIdentityPolicy::new(&[0; 32])    // <- create cookie identity policy
 //!           .name("auth-cookie")
@@ -195,7 +195,7 @@ pub trait IdentityPolicy<Err>: Sized + 'static {
 /// use ntex::web::App;
 /// use ntex_identity::{CookieIdentityPolicy, IdentityService};
 ///
-/// let app = App::new().wrap(IdentityService::new(
+/// let app = App::new().middleware(IdentityService::new(
 ///     // <- create identity middleware
 ///     CookieIdentityPolicy::new(&[0; 32])    // <- create cookie session backend
 ///           .name("auth-cookie")
@@ -419,7 +419,7 @@ impl CookieIdentityInner {
 /// use ntex::web::App;
 /// use ntex_identity::{CookieIdentityPolicy, IdentityService};
 ///
-/// let app = App::new().wrap(IdentityService::new(
+/// let app = App::new().middleware(IdentityService::new(
 ///     // <- create identity middleware
 ///     CookieIdentityPolicy::new(&[0; 32])  // <- construct cookie policy
 ///            .domain("www.rust-lang.org")
@@ -578,7 +578,7 @@ mod tests {
     async fn test_identity() {
         let srv = test::init_service(
             App::new()
-                .wrap(IdentityService::new(
+                .middleware(IdentityService::new(
                     CookieIdentityPolicy::new(&COOKIE_KEY_MASTER)
                         .domain("www.rust-lang.org")
                         .name(COOKIE_NAME)
@@ -635,7 +635,7 @@ mod tests {
         let duration = Duration::days(1);
         let srv = test::init_service(
             App::new()
-                .wrap(IdentityService::new(
+                .middleware(IdentityService::new(
                     CookieIdentityPolicy::new(&COOKIE_KEY_MASTER)
                         .domain("www.rust-lang.org")
                         .name(COOKIE_NAME)
@@ -661,7 +661,7 @@ mod tests {
         let seconds = 60;
         let srv = test::init_service(
             App::new()
-                .wrap(IdentityService::new(
+                .middleware(IdentityService::new(
                     CookieIdentityPolicy::new(&COOKIE_KEY_MASTER)
                         .domain("www.rust-lang.org")
                         .name(COOKIE_NAME)
@@ -691,9 +691,11 @@ mod tests {
     > {
         test::init_service(
             App::new()
-                .wrap(IdentityService::new(f(CookieIdentityPolicy::new(&COOKIE_KEY_MASTER)
-                    .secure(false)
-                    .name(COOKIE_NAME))))
+                .middleware(IdentityService::new(f(CookieIdentityPolicy::new(
+                    &COOKIE_KEY_MASTER,
+                )
+                .secure(false)
+                .name(COOKIE_NAME))))
                 .service(web::resource("/").to(|id: Identity| async move {
                     let identity = id.identity();
                     if identity.is_none() {

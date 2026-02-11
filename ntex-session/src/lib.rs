@@ -31,7 +31,7 @@
 //! #[ntex::main]
 //! async fn main() -> std::io::Result<()> {
 //!     web::server(
-//!         async || App::new().wrap(
+//!         async || App::new().middleware(
 //!               CookieSession::signed(&[0; 32]) // <- create cookie based session middleware
 //!                     .secure(false)
 //!              )

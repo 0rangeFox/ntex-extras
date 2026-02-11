@@ -23,7 +23,7 @@ default = ["cookie-session"]
 cookie-session = ["cookie/secure", "ntex/cookie"]
 
 [dependencies]
-ntex = "3.0"
+ntex = "3.2"
 cookie = "0.18"
 derive_more = { version = "2", features = ["from", "display"] }
 futures = "0.3"
@@ -32,4 +32,4 @@ serde_json = "1.0"
 time = { version = "0.3", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-ntex = { version = "3.0", features=["neon"] }
+ntex = { version = "3.2", features=["neon"] }

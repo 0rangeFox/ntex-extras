@@ -17,9 +17,9 @@ name = "ntex_cors"
 path = "src/lib.rs"
 
 [dependencies]
-ntex = "3.0.1"
+ntex = "3.2.0"
 derive_more = { version = "2", features = ["from", "display"] }
 futures = "0.3"
 
 [dev-dependencies]
-ntex = { version = "3.0", features=["neon"] }
+ntex = { version = "3.2", features=["neon"] }
