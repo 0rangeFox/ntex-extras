@@ -194,7 +194,7 @@ impl CookieSessionInner {
 /// use ntex_session::CookieSession;
 /// use ntex::web::{self, App, HttpResponse, HttpServer};
 ///
-/// let app = App::new().wrap(
+/// let app = App::new().middleware(
 ///     CookieSession::signed(&[0; 32])
 ///         .domain("www.rust-lang.org")
 ///         .name("ntex-session")
@@ -363,7 +363,7 @@ mod tests {
     #[ntex::test]
     async fn cookie_session() {
         let app = test::init_service(
-            App::new().wrap(CookieSession::signed(&[0; 32]).secure(false)).service(
+            App::new().middleware(CookieSession::signed(&[0; 32]).secure(false)).service(
                 web::resource("/").to(|ses: Session| async move {
                     let _ = ses.set("counter", 100);
                     "test"
@@ -380,7 +380,7 @@ mod tests {
     #[ntex::test]
     async fn private_cookie() {
         let app = test::init_service(
-            App::new().wrap(CookieSession::private(&[0; 32]).secure(false)).service(
+            App::new().middleware(CookieSession::private(&[0; 32]).secure(false)).service(
                 web::resource("/").to(|ses: Session| async move {
                     let _ = ses.set("counter", 100);
                     "test"
@@ -397,7 +397,7 @@ mod tests {
     #[ntex::test]
     async fn cookie_session_extractor() {
         let app = test::init_service(
-            App::new().wrap(CookieSession::signed(&[0; 32]).secure(false)).service(
+            App::new().middleware(CookieSession::signed(&[0; 32]).secure(false)).service(
                 web::resource("/").to(|ses: Session| async move {
                     let _ = ses.set("counter", 100);
                     "test"
@@ -415,7 +415,7 @@ mod tests {
     async fn basics() {
         let app = test::init_service(
             App::new()
-                .wrap(
+                .middleware(
                     CookieSession::signed(&[0; 32])
                         .path("/test/")
                         .name("ntex-test")
@@ -454,7 +454,7 @@ mod tests {
     async fn prolong_expiration() {
         let app = test::init_service(
             App::new()
-                .wrap(CookieSession::signed(&[0; 32]).secure(false).expires_in(60))
+                .middleware(CookieSession::signed(&[0; 32]).secure(false).expires_in(60))
                 .service(web::resource("/").to(|ses: Session| async move {
                     let _ = ses.set("counter", 100);
                     "test"

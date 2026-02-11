@@ -1060,7 +1060,7 @@ mod tests {
 
     #[ntex::test]
     async fn test_named_file_content_encoding() {
-        let srv = test::init_service(App::new().wrap(Compress::default()).service(
+        let srv = test::init_service(App::new().middleware(Compress::default()).service(
             web::resource("/").to(|| async {
                 NamedFile::open("Cargo.toml")
                     .unwrap()
@@ -1080,7 +1080,7 @@ mod tests {
 
     #[ntex::test]
     async fn test_named_file_content_encoding_gzip() {
-        let srv = test::init_service(App::new().wrap(Compress::default()).service(
+        let srv = test::init_service(App::new().middleware(Compress::default()).service(
             web::resource("/").to(|| async {
                 NamedFile::open("Cargo.toml")
                     .unwrap()

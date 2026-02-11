@@ -23,7 +23,7 @@
 //! #[ntex::main]
 //! async fn main() -> std::io::Result<()> {
 //!     web::server(async || App::new()
-//!         .wrap(
+//!         .middleware(
 //!             Cors::new() // <- Construct CORS middleware builder
 //!               .allowed_origin("https://www.rust-lang.org/")
 //!               .allowed_methods(vec![http::Method::GET, http::Method::POST])
