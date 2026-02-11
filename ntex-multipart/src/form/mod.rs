@@ -3,7 +3,7 @@
 use std::{
     any::Any,
     collections::HashMap,
-    future::{ready, Future},
+    future::{Future, ready},
     sync::Arc,
 };
 
@@ -86,7 +86,7 @@ where
                 DuplicateField::Deny => {
                     return Box::pin(ready(Err(MultipartError::DuplicateField(
                         field.form_field_name,
-                    ))))
+                    ))));
                 }
 
                 DuplicateField::Replace => {}
@@ -136,10 +136,7 @@ where
     }
 
     fn from_state(name: &str, state: &'t mut State) -> Result<Self, MultipartError> {
-        Ok(state
-            .remove(name)
-            .map(|m| *m.downcast::<Vec<T>>().unwrap())
-            .unwrap_or_default())
+        Ok(state.remove(name).map(|m| *m.downcast::<Vec<T>>().unwrap()).unwrap_or_default())
     }
 }
 
@@ -163,7 +160,7 @@ where
                 DuplicateField::Deny => {
                     return Box::pin(ready(Err(MultipartError::DuplicateField(
                         field.form_field_name,
-                    ))))
+                    ))));
                 }
 
                 DuplicateField::Replace => {}

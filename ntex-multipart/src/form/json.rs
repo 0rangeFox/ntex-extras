@@ -2,17 +2,17 @@
 
 use std::sync::Arc;
 
+use super::FieldErrorHandler;
+use crate::{
+    Field, MultipartError,
+    form::{FieldReader, Limits, bytes::Bytes},
+};
 use derive_more::{Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use ntex::http::{Response, ResponseError};
 use ntex::web::HttpRequest;
 use ntex_http::Error;
 use serde::de::DeserializeOwned;
-use super::FieldErrorHandler;
-use crate::{
-    form::{bytes::Bytes, FieldReader, Limits},
-    Field, MultipartError,
-};
 
 /// Deserialize from JSON.
 #[derive(Debug, Deref, DerefMut)]
@@ -53,12 +53,12 @@ where
 
             let bytes = Bytes::read_field(req, field, limits).await?;
 
-            Ok(Json(serde_json::from_slice(bytes.data.as_ref()).map_err(
-                |err| MultipartError::Field {
+            Ok(Json(serde_json::from_slice(bytes.data.as_ref()).map_err(|err| {
+                MultipartError::Field {
                     name: form_field_name,
                     source: config.map_error(req, JsonFieldError::Deserialize(err)),
-                },
-            )?))
+                }
+            })?))
         })
     }
 }
@@ -88,10 +88,8 @@ pub struct JsonConfig {
     validate_content_type: bool,
 }
 
-const DEFAULT_CONFIG: JsonConfig = JsonConfig {
-    err_handler: None,
-    validate_content_type: true,
-};
+const DEFAULT_CONFIG: JsonConfig =
+    JsonConfig { err_handler: None, validate_content_type: true };
 
 impl JsonConfig {
     pub fn error_handler<F>(mut self, f: F) -> Self

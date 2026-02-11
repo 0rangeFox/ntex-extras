@@ -1,16 +1,16 @@
-use std::cell::RefCell;
-use std::{cmp, fmt};
-use std::pin::Pin;
-use std::rc::Rc;
-use std::task::{Context, Poll};
-use futures::Stream;
-use ntex::http::error::PayloadError;
-use ntex::http::{header, HeaderMap};
-use ntex::util::Bytes;
 use crate::MultipartError;
 use crate::payload::{PayloadBuffer, PayloadRef};
 use crate::safety::Safety;
+use futures::Stream;
+use ntex::http::error::PayloadError;
+use ntex::http::{HeaderMap, header};
+use ntex::util::Bytes;
 use ntex_files::header::ContentDisposition;
+use std::cell::RefCell;
+use std::pin::Pin;
+use std::rc::Rc;
+use std::task::{Context, Poll};
+use std::{cmp, fmt};
 
 /// A single field in a multipart stream
 pub struct Field {
@@ -45,7 +45,7 @@ impl Field {
             form_field_name: form_field_name.unwrap_or_default(),
             headers,
             inner,
-            safety
+            safety,
         }
     }
 
@@ -218,7 +218,7 @@ impl InnerField {
                     if (&payload.buf[cur..cur + 2] == b"\r\n"
                         && &payload.buf[cur + 2..cur + 4] == b"--")
                         || (&payload.buf[cur..=cur] == b"\r"
-                        && &payload.buf[cur + 1..cur + 3] == b"--")
+                            && &payload.buf[cur + 1..cur + 3] == b"--")
                     {
                         if cur != 0 {
                             // return buffer

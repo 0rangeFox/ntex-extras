@@ -6,14 +6,13 @@
 // Browser conformance tests at: http://greenbytes.de/tech/tc2231/
 // IANA assignment: http://www.iana.org/assignments/cont-disp/cont-disp.xhtml
 
+use super::error;
+use super::parsing::{self, ExtendedValue};
+use super::{Header, RawLike};
 use crate::standard_header;
 use regex::Regex;
 use std::fmt;
 use std::sync::LazyLock;
-use futures::future::Lazy;
-use super::error;
-use super::parsing::{self, ExtendedValue};
-use super::{Charset, Header, RawLike};
 
 /// The implied disposition of the content of the HTTP body.
 #[derive(Clone, Debug, PartialEq)]
@@ -136,9 +135,9 @@ impl DispositionParam {
         match self {
             DispositionParam::Unknown(ext_name, value)
                 if ext_name.eq_ignore_ascii_case(name.as_ref()) =>
-                {
-                    Some(value.as_str())
-                }
+            {
+                Some(value.as_str())
+            }
             _ => None,
         }
     }
@@ -150,9 +149,9 @@ impl DispositionParam {
         match self {
             DispositionParam::UnknownExt(ext_name, value)
                 if ext_name.eq_ignore_ascii_case(name.as_ref()) =>
-                {
-                    Some(value)
-                }
+            {
+                Some(value)
+            }
             _ => None,
         }
     }
@@ -226,16 +225,12 @@ impl ContentDisposition {
 
     /// Return the value of *filename* if exists.
     pub fn get_filename(&self) -> Option<&str> {
-        self.parameters
-            .iter()
-            .find_map(DispositionParam::as_filename)
+        self.parameters.iter().find_map(DispositionParam::as_filename)
     }
 
     /// Return the value of *filename\** if exists.
     pub fn get_filename_ext(&self) -> Option<&ExtendedValue> {
-        self.parameters
-            .iter()
-            .find_map(DispositionParam::as_filename_ext)
+        self.parameters.iter().find_map(DispositionParam::as_filename_ext)
     }
 
     /// Return the value of the parameter which the `name` matches.
@@ -336,12 +331,9 @@ impl fmt::Display for ContentDisposition {
                     write!(f, "filename=\"{}\"", RE.replace_all(value, "\\$0").as_ref())?
                 }
 
-                DispositionParam::Unknown(ref name, ref value) => write!(
-                    f,
-                    "{}=\"{}\"",
-                    name,
-                    &RE.replace_all(value, "\\$0").as_ref()
-                )?,
+                DispositionParam::Unknown(ref name, ref value) => {
+                    write!(f, "{}=\"{}\"", name, &RE.replace_all(value, "\\$0").as_ref())?
+                }
 
                 DispositionParam::FilenameExt(ref ext_value) => {
                     write!(f, "filename*={}", ext_value)?
@@ -358,9 +350,9 @@ impl fmt::Display for ContentDisposition {
 
 #[cfg(test)]
 mod tests {
-    use crate::header::parsing::ExtendedValue;
     use super::{Charset, ContentDisposition, DispositionParam, DispositionType, Header};
     use crate::header::Raw;
+    use crate::header::parsing::ExtendedValue;
 
     #[test]
     fn test_parse_header() {
@@ -395,8 +387,8 @@ mod tests {
                 charset: Charset::Ext(String::from("UTF-8")),
                 language_tag: None,
                 value: vec![
-                    0xc2, 0xa3, 0x20, b'a', b'n', b'd', 0x20, 0xe2, 0x82, 0xac, 0x20, b'r', b'a',
-                    b't', b'e', b's',
+                    0xc2, 0xa3, 0x20, b'a', b'n', b'd', 0x20, 0xe2, 0x82, 0xac, 0x20, b'r',
+                    b'a', b't', b'e', b's',
                 ],
             })],
         };

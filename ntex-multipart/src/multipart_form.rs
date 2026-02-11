@@ -1,5 +1,5 @@
-use crate::form::State;
 use crate::form::Limits;
+use crate::form::State;
 use crate::{Field, MultipartError};
 use derive_more::{Deref, DerefMut};
 use futures::future::LocalBoxFuture;
@@ -29,7 +29,6 @@ pub trait MultipartCollect: Sized {
     fn from_state(state: State) -> Result<Self, MultipartError>;
 }
 
-
 /// Typed `multipart/form-data` extractor.
 ///
 /// To extract typed data from a multipart stream, the inner type `T` must implement the
@@ -51,7 +50,7 @@ impl<T: MultipartCollect> MultipartForm<T> {
 }
 
 type MultipartFormErrorHandler =
-Option<Arc<dyn Fn(MultipartError, &HttpRequest) -> Error + Send + Sync>>;
+    Option<Arc<dyn Fn(MultipartError, &HttpRequest) -> Error + Send + Sync>>;
 
 /// [`struct@MultipartForm`] extractor configuration.
 ///

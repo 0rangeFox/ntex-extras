@@ -1,15 +1,15 @@
 //! Multipart payload support
 
-use futures::TryStreamExt;
-use ntex::http::Payload;
-use ntex::web::{ErrorRenderer, FromRequest, HttpRequest};
-use std::collections::HashMap;
-use std::convert::Infallible;
-
+#[cfg(feature = "form")]
 use crate::form::{Limits, State};
 use crate::multipart::Multipart;
+#[cfg(feature = "form")]
 use crate::multipart_form::MultipartFormConfig;
+#[cfg(feature = "form")]
 use crate::{MultipartCollect, MultipartError, MultipartForm};
+use ntex::http::Payload;
+use ntex::web::{ErrorRenderer, FromRequest, HttpRequest};
+use std::convert::Infallible;
 
 /// Get request's payload as multipart stream
 ///
@@ -37,26 +37,33 @@ use crate::{MultipartCollect, MultipartError, MultipartForm};
 /// # fn main() {}
 /// ```
 impl<Err> FromRequest<Err> for Multipart
-where 
-    Err: ErrorRenderer
+where
+    Err: ErrorRenderer,
 {
     type Error = Infallible;
 
     #[inline]
-    async fn from_request(req: &HttpRequest, payload: &mut Payload, ) -> Result<Self, Self::Error> {
+    async fn from_request(
+        req: &HttpRequest,
+        payload: &mut Payload,
+    ) -> Result<Self, Self::Error> {
         Ok(Multipart::new(req.headers(), payload.take()))
     }
 }
 
+#[cfg(feature = "form")]
 impl<T, Err> FromRequest<Err> for MultipartForm<T>
 where
     T: MultipartCollect + 'static,
-    Err: ErrorRenderer
+    Err: ErrorRenderer,
 {
     type Error = MultipartError;
 
     #[inline]
-    async fn from_request(req: &HttpRequest, payload: &mut Payload, ) -> Result<Self, Self::Error> {
+    async fn from_request(
+        req: &HttpRequest,
+        payload: &mut Payload,
+    ) -> Result<Self, Self::Error> {
         let mut multipart = Multipart::new(req.headers(), payload);
 
         let content_type = match multipart.content_type() {

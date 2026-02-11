@@ -1,4 +1,5 @@
 use crate::MultipartError;
+use crate::safety::Safety;
 use futures::stream::LocalBoxStream;
 use futures::{Stream, StreamExt};
 use ntex::http::error::PayloadError;
@@ -7,7 +8,6 @@ use std::cell::{RefCell, RefMut};
 use std::pin::Pin;
 use std::rc::Rc;
 use std::task::{Context, Poll};
-use crate::safety::Safety;
 
 pub(crate) struct PayloadRef {
     payload: Rc<RefCell<PayloadBuffer>>,
@@ -107,7 +107,6 @@ impl PayloadBuffer {
         self.buf.extend_from_slice(&buf);
     }
 }
-
 
 #[cfg(test)]
 mod tests {

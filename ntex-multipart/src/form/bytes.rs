@@ -1,12 +1,12 @@
-use futures::future::LocalBoxFuture;
+use crate::{
+    Field, MultipartError,
+    form::{FieldReader, Limits},
+};
 use futures::TryStreamExt;
+use futures::future::LocalBoxFuture;
 use mime::Mime;
 use ntex::util::BytesMut;
 use ntex::web::HttpRequest;
-use crate::{
-    form::{FieldReader, Limits},
-    Field, MultipartError,
-};
 
 /// Read the field into memory.
 #[derive(Debug)]
@@ -24,7 +24,11 @@ pub struct Bytes {
 impl<'t> FieldReader<'t> for Bytes {
     type Future = LocalBoxFuture<'t, Result<Self, MultipartError>>;
 
-    fn read_field(_: &'t HttpRequest, mut field: Field, limits: &'t mut Limits) -> Self::Future {
+    fn read_field(
+        _: &'t HttpRequest,
+        mut field: Field,
+        limits: &'t mut Limits,
+    ) -> Self::Future {
         Box::pin(async move {
             let mut buf = BytesMut::with_capacity(131_072);
 

@@ -99,10 +99,14 @@ impl NamedFile {
 
             let ct = from_path(&path).first_or_octet_stream();
             let disposition = match ct.type_() {
-                mime::IMAGE | mime::TEXT | mime::AUDIO | mime::VIDEO => header::DispositionType::Inline,
+                mime::IMAGE | mime::TEXT | mime::AUDIO | mime::VIDEO => {
+                    header::DispositionType::Inline
+                }
                 mime::APPLICATION => match ct.subtype() {
                     mime::JAVASCRIPT | mime::JSON => header::DispositionType::Inline,
-                    name if name == "wasm" || name == "xhtml" => header::DispositionType::Inline,
+                    name if name == "wasm" || name == "xhtml" => {
+                        header::DispositionType::Inline
+                    }
                     _ => header::DispositionType::Attachment,
                 },
                 _ => header::DispositionType::Attachment,
@@ -117,11 +121,13 @@ impl NamedFile {
             let mut parameters = vec![header::DispositionParam::Filename(filename_s)];
 
             if !filename.is_ascii() {
-                parameters.push(header::DispositionParam::FilenameExt(header::parsing::ExtendedValue {
-                    charset: header::Charset::Ext(String::from("UTF-8")),
-                    language_tag: None,
-                    value: filename.into_owned().into_bytes(),
-                }))
+                parameters.push(header::DispositionParam::FilenameExt(
+                    header::parsing::ExtendedValue {
+                        charset: header::Charset::Ext(String::from("UTF-8")),
+                        language_tag: None,
+                        value: filename.into_owned().into_bytes(),
+                    },
+                ))
             }
 
             let cd = header::ContentDisposition { disposition, parameters };
@@ -307,9 +313,9 @@ impl NamedFile {
         } else if let (Some(ref m), Some(header::IfUnmodifiedSince(ref since))) = {
             let mut header = None;
             for hdr in req.headers().get_all(http::header::IF_UNMODIFIED_SINCE) {
-                if let Ok(v) = header::IfUnmodifiedSince::parse_header(
-                    &header::Raw::from(hdr.as_bytes()),
-                ) {
+                if let Ok(v) =
+                    header::IfUnmodifiedSince::parse_header(&header::Raw::from(hdr.as_bytes()))
+                {
                     header = Some(v);
                     break;
                 }
@@ -335,9 +341,9 @@ impl NamedFile {
         } else if let (Some(ref m), Some(header::IfModifiedSince(ref since))) = {
             let mut header = None;
             for hdr in req.headers().get_all(http::header::IF_MODIFIED_SINCE) {
-                if let Ok(v) = header::IfModifiedSince::parse_header(
-                    &header::Raw::from(hdr.as_bytes()),
-                ) {
+                if let Ok(v) =
+                    header::IfModifiedSince::parse_header(&header::Raw::from(hdr.as_bytes()))
+                {
                     header = Some(v);
                     break;
                 }

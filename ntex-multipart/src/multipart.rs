@@ -1,19 +1,19 @@
 //! Multipart payload support
-use ntex_files::header::DispositionType;
-use std::cell::RefCell;
-use std::task::{Context, Poll};
-use std::{convert::TryFrom, pin::Pin, rc::Rc};
-use futures::stream::{Stream, StreamExt};
+use crate::Field;
+use crate::error::MultipartError;
+use crate::field::InnerField;
+use crate::payload::{PayloadBuffer, PayloadRef};
+use crate::safety::Safety;
+use futures::stream::Stream;
 use mime::Mime;
 use ntex::http::error::{DecodeError, PayloadError};
 use ntex::http::header::{self, HeaderMap, HeaderName, HeaderValue};
 use ntex::util::Bytes;
+use ntex_files::header::DispositionType;
 use ntex_files::header::{ContentDisposition, Header};
-use crate::error::MultipartError;
-use crate::Field;
-use crate::field::InnerField;
-use crate::payload::{PayloadBuffer, PayloadRef};
-use crate::safety::Safety;
+use std::cell::RefCell;
+use std::task::{Context, Poll};
+use std::{convert::TryFrom, pin::Pin, rc::Rc};
 
 const MAX_HEADERS: usize = 32;
 
@@ -83,7 +83,7 @@ impl Multipart {
                 if let Ok(ct) = content_type.parse::<Mime>() {
                     if ct.type_() == mime::MULTIPART {
                         if let Some(boundary) = ct.get_param(mime::BOUNDARY) {
-                            Ok((ct, boundary.as_str().to_owned()))
+                            Ok((ct.clone(), boundary.as_str().to_owned()))
                         } else {
                             Err(MultipartError::Boundary)
                         }
@@ -106,7 +106,7 @@ impl Multipart {
         if let Some(err) = self.error.take() {
             Err(err)
         } else {
-            Ok(self.inner.unwrap().borrow().content_type.clone())
+            Ok(self.inner.as_ref().unwrap().borrow().content_type.clone())
         }
     }
 }
@@ -328,12 +328,14 @@ impl InnerMultipart {
 
             let field_content_disposition = headers
                 .get(&header::CONTENT_DISPOSITION)
-                .and_then(|cd| ContentDisposition::parse_header(&cd).ok())
+                .and_then(|cd| {
+                    ContentDisposition::parse_header(&ntex_files::header::Raw::from(
+                        cd.as_bytes(),
+                    ))
+                    .ok()
+                })
                 .filter(|content_disposition| {
-                    matches!(
-                        content_disposition.disposition,
-                        DispositionType::FormData,
-                    )
+                    matches!(content_disposition.disposition, DispositionType::FormData,)
                 });
 
             let form_field_name = if self.content_type.subtype() == mime::FORM_DATA {
@@ -342,7 +344,9 @@ impl InnerMultipart {
                 };
 
                 let Some(field_name) = cd.get_name() else {
-                    return Poll::Ready(Some(Err(MultipartError::ContentDispositionNameMissing)));
+                    return Poll::Ready(Some(Err(
+                        MultipartError::ContentDispositionNameMissing,
+                    )));
                 };
 
                 Some(field_name.to_owned())
@@ -350,7 +354,8 @@ impl InnerMultipart {
                 None
             };
 
-            let field_content_type: Option<Mime> = if let Some(content_type) = headers.get(&header::CONTENT_TYPE)
+            let field_content_type: Option<Mime> = if let Some(content_type) =
+                headers.get(&header::CONTENT_TYPE)
                 && let Ok(content_type) = content_type.to_str()
                 && let Ok(ct) = content_type.parse::<Mime>()
             {
@@ -362,10 +367,10 @@ impl InnerMultipart {
             self.state = InnerState::Boundary;
 
             // nested multipart stream is not supported
-            if let Some(mime) = &field_content_type {
-                if mime.type_() == mime::MULTIPART {
-                    return Poll::Ready(Some(Err(MultipartError::Nested)));
-                }
+            if let Some(mime) = &field_content_type
+                && mime.type_() == mime::MULTIPART
+            {
+                return Poll::Ready(Some(Err(MultipartError::Nested)));
             }
 
             let field = Rc::new(RefCell::new(InnerField::new(
@@ -381,7 +386,7 @@ impl InnerMultipart {
                 field_content_type,
                 field_content_disposition,
                 form_field_name,
-                field
+                field,
             ))))
         }
     }
@@ -396,12 +401,12 @@ impl Drop for InnerMultipart {
 
 #[cfg(test)]
 mod tests {
-    use futures::stream;
     use super::*;
+    use futures::stream;
 
-    use ntex::{channel::mpsc, util::Bytes};
-    use ntex::util::BytesMut;
     use crate::Field;
+    use ntex::util::BytesMut;
+    use ntex::{channel::mpsc, util::Bytes};
 
     #[ntex::test]
     async fn test_boundary() {
@@ -420,8 +425,7 @@ mod tests {
         }
 
         let mut headers = HeaderMap::new();
-        headers
-            .insert(header::CONTENT_TYPE, HeaderValue::from_static("multipart/mixed"));
+        headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("multipart/mixed"));
         match Multipart::boundary(&headers) {
             Err(MultipartError::Boundary) => (),
             _ => unreachable!("should not happen"),
@@ -435,7 +439,10 @@ mod tests {
             ),
         );
 
-        assert_eq!(Multipart::boundary(&headers).unwrap().1, "5c02368e880e436dab70ed54e1c58209");
+        assert_eq!(
+            Multipart::boundary(&headers).unwrap().1,
+            "5c02368e880e436dab70ed54e1c58209"
+        );
     }
 
     fn create_stream() -> (
@@ -589,5 +596,4 @@ mod tests {
             _ => unreachable!(),
         }
     }
-
 }

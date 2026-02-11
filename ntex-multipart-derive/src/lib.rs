@@ -5,7 +5,7 @@ use darling::{FromDeriveInput, FromField, FromMeta};
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
-use syn::{parse_macro_input, Type};
+use syn::{Type, parse_macro_input};
 
 #[derive(Default, FromMeta)]
 enum DuplicateField {
@@ -149,7 +149,7 @@ pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenS
             return compile_err(syn::Error::new(
                 input.ident.span(),
                 "`MultipartForm` can only be derived for structs",
-            ))
+            ));
         }
     };
 
@@ -159,7 +159,7 @@ pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenS
             return compile_err(syn::Error::new(
                 input.ident.span(),
                 "`MultipartForm` can only be derived for a struct with named fields",
-            ))
+            ));
         }
     };
 
@@ -188,12 +188,7 @@ pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenS
                 limit => limit.map(Result::unwrap),
             };
 
-            Ok(ParsedField {
-                serialization_name,
-                rust_name,
-                limit,
-                ty: &field.ty,
-            })
+            Ok(ParsedField { serialization_name, rust_name, limit, ty: &field.ty })
         })
         .collect::<Result<Vec<_>, TokenStream>>()
     {
@@ -214,9 +209,9 @@ pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenS
 
     // Return value when a field name is not supported by the form
     let unknown_field_result = if attrs.deny_unknown_fields {
-        quote!(::std::result::Result::Err(
-            ::ntex_multipart::MultipartError::UnknownField(field.name().unwrap().to_string())
-        ))
+        quote!(::std::result::Result::Err(::ntex_multipart::MultipartError::UnknownField(
+            field.name().unwrap().to_string()
+        )))
     } else {
         quote!(::std::result::Result::Ok(()))
     };

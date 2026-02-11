@@ -1,8 +1,8 @@
+use ntex::task::LocalWaker;
 use std::cell::Cell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::task::Context;
-use ntex::task::LocalWaker;
 
 /// Counter. It tracks of number of clones of payloads and give access to
 /// payload only to top most task panics if Safety get destroyed and it not top

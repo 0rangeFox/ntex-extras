@@ -12,14 +12,14 @@ use futures::{AsyncWriteExt, TryStreamExt};
 use mime::Mime;
 use ntex::http::{Response, ResponseError};
 use ntex::web::HttpRequest;
-use ntex_http::error::Error;
 use ntex_http::StatusCode;
+use ntex_http::error::Error;
 use tempfile::NamedTempFile;
 
 use super::FieldErrorHandler;
 use crate::{
-    form::{FieldReader, Limits},
     Field, MultipartError,
+    form::{FieldReader, Limits},
 };
 
 /// Write the field to a temporary file on disk.
@@ -41,7 +41,11 @@ pub struct TempFile {
 impl<'t> FieldReader<'t> for TempFile {
     type Future = LocalBoxFuture<'t, Result<Self, MultipartError>>;
 
-    fn read_field(req: &'t HttpRequest, mut field: Field, limits: &'t mut Limits) -> Self::Future {
+    fn read_field(
+        req: &'t HttpRequest,
+        mut field: Field,
+        limits: &'t mut Limits,
+    ) -> Self::Future {
         Box::pin(async move {
             let config = TempFileConfig::from_req(req);
             let mut size = 0;
@@ -129,17 +133,19 @@ impl TempFileConfig {
             .unwrap_or(&DEFAULT_CONFIG)
     }
 
-    fn map_error(&self, req: &HttpRequest, field_name: &str, err: TempFileError) -> MultipartError {
+    fn map_error(
+        &self,
+        req: &HttpRequest,
+        field_name: &str,
+        err: TempFileError,
+    ) -> MultipartError {
         let source = if let Some(ref err_handler) = self.err_handler {
             (err_handler)(err, req)
         } else {
             err.into()
         };
 
-        MultipartError::Field {
-            name: field_name.to_owned(),
-            source,
-        }
+        MultipartError::Field { name: field_name.to_owned(), source }
     }
 
     /// Sets the directory that temp files will be created in.
@@ -151,10 +157,7 @@ impl TempFileConfig {
     }
 }
 
-const DEFAULT_CONFIG: TempFileConfig = TempFileConfig {
-    err_handler: None,
-    directory: None,
-};
+const DEFAULT_CONFIG: TempFileConfig = TempFileConfig { err_handler: None, directory: None };
 
 impl Default for TempFileConfig {
     fn default() -> Self {

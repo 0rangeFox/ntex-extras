@@ -1,16 +1,16 @@
 //! Deserializes a field from plain text.
 
-use std::{str, sync::Arc};
+use super::FieldErrorHandler;
+use crate::{
+    Field, MultipartError,
+    form::{FieldReader, Limits, bytes::Bytes},
+};
 use derive_more::{Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use ntex::http::{Response, ResponseError};
 use ntex::web::HttpRequest;
 use serde::de::DeserializeOwned;
-use super::FieldErrorHandler;
-use crate::{
-    form::{bytes::Bytes, FieldReader, Limits},
-    Field, MultipartError,
-};
+use std::{str, sync::Arc};
 
 /// Deserialize from plain text.
 ///
@@ -62,11 +62,9 @@ where
                 source: config.map_error(req, TextError::Utf8Error(err)),
             })?;
 
-            Ok(Text(serde_plain::from_str(text).map_err(|err| {
-                MultipartError::Field {
-                    name: form_field_name,
-                    source: config.map_error(req, TextError::Deserialize(err)),
-                }
+            Ok(Text(serde_plain::from_str(text).map_err(|err| MultipartError::Field {
+                name: form_field_name,
+                source: config.map_error(req, TextError::Deserialize(err)),
             })?))
         })
     }
@@ -137,10 +135,8 @@ impl TextConfig {
     }
 }
 
-const DEFAULT_CONFIG: TextConfig = TextConfig {
-    err_handler: None,
-    validate_content_type: true,
-};
+const DEFAULT_CONFIG: TextConfig =
+    TextConfig { err_handler: None, validate_content_type: true };
 
 impl Default for TextConfig {
     fn default() -> Self {
