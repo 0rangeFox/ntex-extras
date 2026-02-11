@@ -3,7 +3,6 @@ use crate::form::State;
 use crate::{Field, MultipartError};
 use derive_more::{Deref, DerefMut};
 use futures::future::LocalBoxFuture;
-use ntex::web;
 use ntex::web::{Error, HttpRequest};
 use std::sync::Arc;
 
@@ -87,9 +86,7 @@ impl MultipartFormConfig {
     /// Extracts payload config from app data. Check both `T` and `Data<T>`, in that order, and fall
     /// back to the default payload config.
     pub(crate) fn from_req(req: &HttpRequest) -> &Self {
-        req.app_state::<Self>()
-            .or_else(|| req.app_state::<web::types::State<Self>>().map(|d| d.as_ref()))
-            .unwrap_or(&DEFAULT_CONFIG)
+        req.app_state::<Self>().unwrap_or(&DEFAULT_CONFIG)
     }
 }
 

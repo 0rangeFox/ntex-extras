@@ -1,4 +1,5 @@
 //! Multipart payload support
+
 use crate::Field;
 use crate::error::MultipartError;
 use crate::field::InnerField;
@@ -402,9 +403,9 @@ impl Drop for InnerMultipart {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures::stream;
-
     use crate::Field;
+    use futures::{StreamExt as _, stream};
+    use futures_test::stream::StreamTestExt as _;
     use ntex::util::BytesMut;
     use ntex::{channel::mpsc, util::Bytes};
 
@@ -513,8 +514,8 @@ mod tests {
         let mut multipart = Multipart::new(&headers, payload);
         match multipart.next().await {
             Some(Ok(mut field)) => {
-                assert_eq!(field.content_type().type_(), mime::TEXT);
-                assert_eq!(field.content_type().subtype(), mime::PLAIN);
+                assert_eq!(field.content_type().unwrap().type_(), mime::TEXT);
+                assert_eq!(field.content_type().unwrap().subtype(), mime::PLAIN);
 
                 match field.next().await.unwrap() {
                     Ok(chunk) => assert_eq!(chunk, "test"),
@@ -530,8 +531,8 @@ mod tests {
 
         match multipart.next().await.unwrap() {
             Ok(mut field) => {
-                assert_eq!(field.content_type().type_(), mime::TEXT);
-                assert_eq!(field.content_type().subtype(), mime::PLAIN);
+                assert_eq!(field.content_type().unwrap().type_(), mime::TEXT);
+                assert_eq!(field.content_type().unwrap().subtype(), mime::PLAIN);
 
                 match field.next().await {
                     Some(Ok(chunk)) => assert_eq!(chunk, "data"),
@@ -573,8 +574,8 @@ mod tests {
         let mut multipart = Multipart::new(&headers, payload);
         match multipart.next().await.unwrap() {
             Ok(mut field) => {
-                assert_eq!(field.content_type().type_(), mime::TEXT);
-                assert_eq!(field.content_type().subtype(), mime::PLAIN);
+                assert_eq!(field.content_type().unwrap().type_(), mime::TEXT);
+                assert_eq!(field.content_type().unwrap().subtype(), mime::PLAIN);
 
                 assert_eq!(get_whole_field(&mut field).await, "test");
             }
@@ -583,8 +584,8 @@ mod tests {
 
         match multipart.next().await {
             Some(Ok(mut field)) => {
-                assert_eq!(field.content_type().type_(), mime::TEXT);
-                assert_eq!(field.content_type().subtype(), mime::PLAIN);
+                assert_eq!(field.content_type().unwrap().type_(), mime::TEXT);
+                assert_eq!(field.content_type().unwrap().subtype(), mime::PLAIN);
 
                 assert_eq!(get_whole_field(&mut field).await, "data");
             }

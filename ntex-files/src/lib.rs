@@ -770,7 +770,7 @@ mod tests {
 
     #[ntex::test]
     async fn test_named_file_image_attachment() {
-        use crate::header::{Charset, ContentDisposition, DispositionParam, DispositionType};
+        use crate::header::{ContentDisposition, DispositionParam, DispositionType};
 
         let cd = ContentDisposition {
             disposition: DispositionType::Attachment,

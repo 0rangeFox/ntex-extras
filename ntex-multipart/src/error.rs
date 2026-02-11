@@ -53,21 +53,21 @@ pub enum MultipartError {
     NotConsumed,
 
     /// Form field handler raised error.
-    #[display("An error occurred processing field: {name}")]
-    Field { name: String, source: ntex_http::error::Error },
+    #[display("An error occurred processing field: {}", name)]
+    Field { name: String, source: ntex::web::Error },
 
     /// Duplicate field found (for structure that opted-in to denying duplicate fields).
-    #[display("Duplicate field found: {_0}")]
+    #[display("Duplicate field found: {}", _0)]
     #[from(ignore)]
     DuplicateField(#[error(not(source))] String),
 
     /// Required field is missing.
-    #[display("Required field is missing: {_0}")]
+    #[display("Required field is missing: {}", _0)]
     #[from(ignore)]
     MissingField(#[error(not(source))] String),
 
     /// Unknown field (for structure that opted-in to denying unknown fields).
-    #[display("Unknown field: {_0}")]
+    #[display("Unknown field: {}", _0)]
     #[from(ignore)]
     UnknownField(#[error(not(source))] String),
 }

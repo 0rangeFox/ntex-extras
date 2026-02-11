@@ -22,8 +22,6 @@ pub mod text;
 #[cfg(feature = "derive")]
 pub use ntex_multipart_derive::MultipartForm;
 
-type FieldErrorHandler<T> = Option<Arc<dyn Fn(T, &HttpRequest) -> Error + Send + Sync>>;
-
 /// Trait that data types to be used in a multipart form struct should implement.
 ///
 /// It represents an asynchronous handler that processes a multipart field to produce `Self`.

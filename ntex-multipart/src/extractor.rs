@@ -7,8 +7,10 @@ use crate::multipart::Multipart;
 use crate::multipart_form::MultipartFormConfig;
 #[cfg(feature = "form")]
 use crate::{MultipartCollect, MultipartError, MultipartForm};
+use futures::TryStreamExt;
 use ntex::http::Payload;
 use ntex::web::{ErrorRenderer, FromRequest, HttpRequest};
+use std::collections::HashMap;
 use std::convert::Infallible;
 
 /// Get request's payload as multipart stream
@@ -64,7 +66,7 @@ where
         req: &HttpRequest,
         payload: &mut Payload,
     ) -> Result<Self, Self::Error> {
-        let mut multipart = Multipart::new(req.headers(), payload);
+        let mut multipart = Multipart::new(req.headers(), payload.take());
 
         let content_type = match multipart.content_type() {
             Ok(content_type) => content_type,

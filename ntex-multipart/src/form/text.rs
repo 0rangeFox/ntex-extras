@@ -1,16 +1,15 @@
 //! Deserializes a field from plain text.
 
-use super::FieldErrorHandler;
 use crate::{
     Field, MultipartError,
     form::{FieldReader, Limits, bytes::Bytes},
 };
-use derive_more::{Deref, DerefMut, Display, Error};
+use derive_more::{Deref, DerefMut, Display};
 use futures::future::LocalBoxFuture;
-use ntex::http::{Response, ResponseError};
-use ntex::web::HttpRequest;
+use ntex::http::StatusCode;
+use ntex::web::{DefaultError, HttpRequest, WebResponseError};
 use serde::de::DeserializeOwned;
-use std::{str, sync::Arc};
+use std::str;
 
 /// Deserialize from plain text.
 ///
@@ -34,7 +33,7 @@ where
 
     fn read_field(req: &'t HttpRequest, field: Field, limits: &'t mut Limits) -> Self::Future {
         Box::pin(async move {
-            let config = TextConfig::from_req(req);
+            let config = req.app_state::<TextConfig>().unwrap_or(&DEFAULT_CONFIG);
 
             if config.validate_content_type {
                 let valid = if let Some(mime) = field.content_type() {
@@ -48,7 +47,7 @@ where
                 if !valid {
                     return Err(MultipartError::Field {
                         name: field.form_field_name,
-                        source: config.map_error(req, TextError::ContentType),
+                        source: TextError::ContentType.into(),
                     });
                 }
             }
@@ -59,18 +58,18 @@ where
 
             let text = str::from_utf8(&bytes.data).map_err(|err| MultipartError::Field {
                 name: form_field_name.clone(),
-                source: config.map_error(req, TextError::Utf8Error(err)),
+                source: TextError::Utf8Error(err).into(),
             })?;
 
             Ok(Text(serde_plain::from_str(text).map_err(|err| MultipartError::Field {
                 name: form_field_name,
-                source: config.map_error(req, TextError::Deserialize(err)),
+                source: TextError::Deserialize(err).into(),
             })?))
         })
     }
 }
 
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display)]
 #[non_exhaustive]
 pub enum TextError {
     /// UTF-8 decoding error.
@@ -86,45 +85,20 @@ pub enum TextError {
     ContentType,
 }
 
-impl ResponseError for TextError {
-    fn error_response(&self) -> Response {
-        todo!()
+/// Return `BadRequest` for `TextError`
+impl WebResponseError<DefaultError> for TextError {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::BAD_REQUEST
     }
 }
 
 /// Configuration for the [`Text`] field reader.
 #[derive(Clone)]
 pub struct TextConfig {
-    err_handler: FieldErrorHandler<TextError>,
     validate_content_type: bool,
 }
 
 impl TextConfig {
-    /// Sets custom error handler.
-    pub fn error_handler<F>(mut self, f: F) -> Self
-    where
-        F: Fn(TextError, &HttpRequest) -> ntex::web::Error + Send + Sync + 'static,
-    {
-        self.err_handler = Some(Arc::new(f));
-        self
-    }
-
-    /// Extracts payload config from app data. Check both `T` and `Data<T>`, in that order, and fall
-    /// back to the default payload config.
-    fn from_req(req: &HttpRequest) -> &Self {
-        req.app_state::<Self>()
-            .or_else(|| req.app_state::<ntex::web::types::State<Self>>().map(|d| d.as_ref()))
-            .unwrap_or(&DEFAULT_CONFIG)
-    }
-
-    fn map_error(&self, req: &HttpRequest, err: TextError) -> ntex::web::Error {
-        if let Some(ref err_handler) = self.err_handler {
-            (err_handler)(err, req)
-        } else {
-            err.into()
-        }
-    }
-
     /// Sets whether or not the field must have a valid `Content-Type` header to be parsed.
     ///
     /// Note that an empty `Content-Type` is also accepted, as the multipart specification defines
@@ -135,8 +109,7 @@ impl TextConfig {
     }
 }
 
-const DEFAULT_CONFIG: TextConfig =
-    TextConfig { err_handler: None, validate_content_type: true };
+const DEFAULT_CONFIG: TextConfig = TextConfig { validate_content_type: true };
 
 impl Default for TextConfig {
     fn default() -> Self {

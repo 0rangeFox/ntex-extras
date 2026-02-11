@@ -1,17 +1,13 @@
 //! Deserializes a field as JSON.
 
-use std::sync::Arc;
-
-use super::FieldErrorHandler;
 use crate::{
     Field, MultipartError,
     form::{FieldReader, Limits, bytes::Bytes},
 };
-use derive_more::{Deref, DerefMut, Display, Error};
+use derive_more::{Deref, DerefMut, Display};
 use futures::future::LocalBoxFuture;
-use ntex::http::{Response, ResponseError};
-use ntex::web::HttpRequest;
-use ntex_http::Error;
+use ntex::http::StatusCode;
+use ntex::web::{DefaultError, HttpRequest, WebResponseError};
 use serde::de::DeserializeOwned;
 
 /// Deserialize from JSON.
@@ -32,7 +28,7 @@ where
 
     fn read_field(req: &'t HttpRequest, field: Field, limits: &'t mut Limits) -> Self::Future {
         Box::pin(async move {
-            let config = JsonConfig::from_req(req);
+            let config = req.app_state::<JsonConfig>().unwrap_or(&DEFAULT_CONFIG);
 
             if config.validate_content_type {
                 let valid = if let Some(mime) = field.content_type() {
@@ -44,7 +40,7 @@ where
                 if !valid {
                     return Err(MultipartError::Field {
                         name: field.form_field_name,
-                        source: config.map_error(req, JsonFieldError::ContentType),
+                        source: JsonFieldError::ContentType.into(),
                     });
                 }
             }
@@ -56,18 +52,18 @@ where
             Ok(Json(serde_json::from_slice(bytes.data.as_ref()).map_err(|err| {
                 MultipartError::Field {
                     name: form_field_name,
-                    source: config.map_error(req, JsonFieldError::Deserialize(err)),
+                    source: JsonFieldError::Deserialize(err).into(),
                 }
             })?))
         })
     }
 }
 
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display)]
 #[non_exhaustive]
 pub enum JsonFieldError {
     /// Deserialize error.
-    #[display("Json deserialize error: {}", _0)]
+    #[display("Json deserialize error: {:?}", _0)]
     Deserialize(serde_json::Error),
 
     /// Content type error.
@@ -75,47 +71,22 @@ pub enum JsonFieldError {
     ContentType,
 }
 
-impl ResponseError for JsonFieldError {
-    fn error_response(&self) -> Response {
-        todo!()
+/// Return `BadRequest` for `JsonFieldError`
+impl WebResponseError<DefaultError> for JsonFieldError {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::BAD_REQUEST
     }
 }
 
 /// Configuration for the [`Json`] field reader.
 #[derive(Clone)]
 pub struct JsonConfig {
-    err_handler: FieldErrorHandler<JsonFieldError>,
     validate_content_type: bool,
 }
 
-const DEFAULT_CONFIG: JsonConfig =
-    JsonConfig { err_handler: None, validate_content_type: true };
+const DEFAULT_CONFIG: JsonConfig = JsonConfig { validate_content_type: true };
 
 impl JsonConfig {
-    pub fn error_handler<F>(mut self, f: F) -> Self
-    where
-        F: Fn(JsonFieldError, &HttpRequest) -> Error + Send + Sync + 'static,
-    {
-        self.err_handler = Some(Arc::new(f));
-        self
-    }
-
-    /// Extract payload config from app data. Check both `T` and `Data<T>`, in that order, and fall
-    /// back to the default payload config.
-    fn from_req(req: &HttpRequest) -> &Self {
-        req.app_State::<Self>()
-            .or_else(|| req.app_state::<ntex::web::types::State<Self>>().map(|d| d.as_ref()))
-            .unwrap_or(&DEFAULT_CONFIG)
-    }
-
-    fn map_error(&self, req: &HttpRequest, err: JsonFieldError) -> Error {
-        if let Some(err_handler) = self.err_handler.as_ref() {
-            (*err_handler)(err, req)
-        } else {
-            err.into()
-        }
-    }
-
     /// Sets whether or not the field must have a valid `Content-Type` header to be parsed.
     pub fn validate_content_type(mut self, validate_content_type: bool) -> Self {
         self.validate_content_type = validate_content_type;
