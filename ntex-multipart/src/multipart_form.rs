@@ -6,6 +6,9 @@ use futures::future::LocalBoxFuture;
 use ntex::web::{Error, HttpRequest};
 use std::sync::Arc;
 
+#[cfg(feature = "derive")]
+pub use ntex_multipart_derive::MultipartForm;
+
 /// Trait that allows a type to be used in the [`struct@MultipartForm`] extractor.
 ///
 /// You should use the [`macro@MultipartForm`] macro to derive this for your struct.

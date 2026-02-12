@@ -1,26 +1,21 @@
 //! Extract and process typed data from fields of a `multipart/form-data` request.
 
+use crate::{Field, MultipartError};
+use derive_more::{Deref, DerefMut};
+use futures::future::LocalBoxFuture;
+use ntex::http::error::PayloadError;
+use ntex::web::HttpRequest;
 use std::{
     any::Any,
     collections::HashMap,
     future::{Future, ready},
-    sync::Arc,
 };
-
-use crate::{Field, MultipartCollect, MultipartError};
-use derive_more::{Deref, DerefMut};
-use futures::future::LocalBoxFuture;
-use ntex::http::error::PayloadError;
-use ntex::web::{Error, HttpRequest};
 
 pub mod bytes;
 pub mod json;
 #[cfg(feature = "tempfile")]
 pub mod temp_file;
 pub mod text;
-
-#[cfg(feature = "derive")]
-pub use ntex_multipart_derive::MultipartForm;
 
 /// Trait that data types to be used in a multipart form struct should implement.
 ///
@@ -281,25 +276,5 @@ impl Limits {
         }
 
         Ok(())
-    }
-}
-
-/// Typed `multipart/form-data` extractor.
-///
-/// To extract typed data from a multipart stream, the inner type `T` must implement the
-/// [`MultipartCollect`] trait. You should use the [`macro@MultipartForm`] macro to derive this
-/// for your struct.
-///
-/// Note that this extractor rejects requests with any other Content-Type such as `multipart/mixed`,
-/// `multipart/related`, or non-multipart media types.
-///
-/// Add a [`MultipartFormConfig`] to your app data to configure extraction.
-#[derive(Deref, DerefMut)]
-pub struct MultipartForm<T: MultipartCollect>(pub T);
-
-impl<T: MultipartCollect> MultipartForm<T> {
-    /// Unwrap into inner `T` value.
-    pub fn into_inner(self) -> T {
-        self.0
     }
 }
