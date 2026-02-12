@@ -1,17 +1,17 @@
 //! Multipart payload support
 
-#[cfg(feature = "form")]
-use crate::form::{Limits, State};
 use crate::multipart::Multipart;
-#[cfg(feature = "form")]
-use crate::multipart_form::MultipartFormConfig;
-#[cfg(feature = "form")]
-use crate::{MultipartCollect, MultipartError, MultipartForm};
-use futures::TryStreamExt;
 use ntex::http::Payload;
 use ntex::web::{ErrorRenderer, FromRequest, HttpRequest};
-use std::collections::HashMap;
 use std::convert::Infallible;
+#[cfg(feature = "form")]
+use {
+    crate::form::{Limits, State},
+    crate::multipart_form::MultipartFormConfig,
+    crate::{MultipartCollect, MultipartError, MultipartForm},
+    futures::TryStreamExt,
+    std::collections::HashMap,
+};
 
 /// Get request's payload as multipart stream
 ///
