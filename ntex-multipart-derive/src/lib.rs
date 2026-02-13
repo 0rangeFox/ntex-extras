@@ -1,10 +1,9 @@
-use std::collections::HashSet;
-
 use bytesize::ByteSize;
 use darling::{FromDeriveInput, FromField, FromMeta};
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
+use std::collections::HashSet;
 use syn::{Type, parse_macro_input};
 
 #[derive(Default, FromMeta)]
@@ -138,7 +137,7 @@ struct ParsedField<'t> {
 ///
 /// [`bytesize`]: https://docs.rs/bytesize/2
 #[proc_macro_derive(MultipartForm, attributes(multipart))]
-pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn impl_multipart_form(input: TokenStream) -> TokenStream {
     let input: syn::DeriveInput = parse_macro_input!(input);
 
     let name = &input.ident;
@@ -259,7 +258,7 @@ pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenS
     }
 
     let generation = quote! {
-        impl ::ntex_multipart::form::MultipartCollect for #name {
+        impl ::ntex_multipart::MultipartCollect for #name {
             fn limit(field_name: &str) -> ::std::option::Option<usize> {
                 match field_name {
                     #limit_impl
@@ -268,7 +267,7 @@ pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenS
             }
 
             fn handle_field<'t>(
-                req: &'t ::ntex_web::HttpRequest,
+                req: &'t ::ntex::web::HttpRequest,
                 field: ::ntex_multipart::Field,
                 limits: &'t mut ::ntex_multipart::form::Limits,
                 state: &'t mut ::ntex_multipart::form::State,
