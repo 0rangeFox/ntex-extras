@@ -33,6 +33,20 @@ pub enum DispositionType {
     Ext(String),
 }
 
+impl<'a> From<&'a str> for DispositionType {
+    fn from(origin: &'a str) -> DispositionType {
+        if unicase::eq_ascii(origin, "inline") {
+            DispositionType::Inline
+        } else if unicase::eq_ascii(origin, "attachment") {
+            DispositionType::Attachment
+        } else if unicase::eq_ascii(origin, "form-data") {
+            DispositionType::FormData
+        } else {
+            DispositionType::Ext(origin.to_owned())
+        }
+    }
+}
+
 /// A parameter to the disposition type.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DispositionParam {
@@ -264,15 +278,7 @@ impl Header for ContentDisposition {
             };
 
             let mut cd = ContentDisposition {
-                disposition: if unicase::eq_ascii(disposition, "inline") {
-                    DispositionType::Inline
-                } else if unicase::eq_ascii(disposition, "attachment") {
-                    DispositionType::Attachment
-                } else if unicase::eq_ascii(disposition, "form-data") {
-                    DispositionType::FormData
-                } else {
-                    DispositionType::Ext(disposition.to_owned())
-                },
+                disposition: disposition.into(),
                 parameters: Vec::new(),
             };
 
@@ -280,7 +286,13 @@ impl Header for ContentDisposition {
                 let mut parts = section.splitn(2, '=');
 
                 let key = if let Some(key) = parts.next() {
-                    key.trim()
+                    let key_trimmed = key.trim();
+
+                    if key_trimmed.is_empty() || key_trimmed == "*" {
+                        return Err(error::Error::Header);
+                    }
+
+                    key_trimmed
                 } else {
                     return Err(error::Error::Header);
                 };
@@ -291,14 +303,56 @@ impl Header for ContentDisposition {
                     return Err(error::Error::Header);
                 };
 
-                cd.parameters.push(if unicase::eq_ascii(key, "name") {
-                    DispositionParam::Name(val.to_owned())
-                } else if unicase::eq_ascii(key, "filename") {
-                    // See also comments in test_from_raw_unnecessary_percent_decode.
-                    DispositionParam::Filename(val.to_owned())
+                if let Some(key) = key.strip_suffix('*') {
+                    let ext_val = parsing::parse_extended_value(val)?;
+
+                    cd.parameters.push(if unicase::eq_ascii(key, "filename") {
+                        DispositionParam::FilenameExt(ext_val)
+                    } else {
+                        DispositionParam::UnknownExt(key.to_owned(), ext_val)
+                    });
                 } else {
-                    DispositionParam::Unknown(key.to_owned(), val.to_owned())
-                });
+                    let val = if val.starts_with('\"') {
+                        // quoted-string: defined in RFC 6266 -> RFC 2616 Section 3.6
+                        let mut escaping = false;
+                        let mut quoted_string = vec![];
+
+                        // search for closing quote
+                        for (_, &c) in val.as_bytes().iter().skip(1).enumerate() {
+                            if escaping {
+                                escaping = false;
+                                quoted_string.push(c);
+                            } else if c == 0x5c {
+                                // backslash
+                                escaping = true;
+                            } else if c == 0x22 {
+                                // double quote
+                                break;
+                            } else {
+                                quoted_string.push(c);
+                            }
+                        }
+
+                        // In fact, it should not be Err if the above code is correct.
+                        String::from_utf8(quoted_string).map_err(|_| error::Error::Header)?
+                    } else {
+                        if val.is_empty() {
+                            // quoted-string can be empty, but token cannot be empty
+                            return Err(error::Error::Header);
+                        }
+
+                        val.to_owned()
+                    };
+
+                    cd.parameters.push(if unicase::eq_ascii(key, "name") {
+                        DispositionParam::Name(val)
+                    } else if unicase::eq_ascii(key, "filename") {
+                        // See also comments in test_from_raw_unnecessary_percent_decode.
+                        DispositionParam::Filename(val)
+                    } else {
+                        DispositionParam::Unknown(key.to_owned(), val)
+                    });
+                }
             }
 
             Ok(cd)

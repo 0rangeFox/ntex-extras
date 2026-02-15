@@ -80,8 +80,6 @@ where
 
         let config = MultipartFormConfig::from_req(req);
         let mut limits = Limits::new(config.total_limit, config.memory_limit);
-        let req = req.clone();
-
         let mut state = State::default();
 
         // ensure limits are shared for all fields with this name

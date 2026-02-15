@@ -327,17 +327,15 @@ impl InnerMultipart {
                 return Poll::Pending;
             };
 
-            let field_content_disposition = headers
-                .get(&header::CONTENT_DISPOSITION)
-                .and_then(|cd| {
-                    ContentDisposition::parse_header(&ntex_files::header::Raw::from(
-                        cd.as_bytes(),
-                    ))
-                    .ok()
-                })
-                .filter(|content_disposition| {
-                    matches!(content_disposition.disposition, DispositionType::FormData,)
-                });
+            let field_content_disposition = if let Some(hv) =
+                headers.get(&header::CONTENT_DISPOSITION)
+                && let Ok(cd) = ContentDisposition::parse_header(&ntex_files::header::Raw::from(hv.as_bytes()))
+                && cd.disposition == DispositionType::FormData
+            {
+                Some(cd)
+            } else {
+                None
+            };
 
             let form_field_name = if self.content_type.subtype() == mime::FORM_DATA {
                 let Some(cd) = &field_content_disposition else {
@@ -345,9 +343,7 @@ impl InnerMultipart {
                 };
 
                 let Some(field_name) = cd.get_name() else {
-                    return Poll::Ready(Some(Err(
-                        MultipartError::ContentDispositionNameMissing,
-                    )));
+                    return Poll::Ready(Some(Err(MultipartError::ContentDispositionNameMissing)));
                 };
 
                 Some(field_name.to_owned())

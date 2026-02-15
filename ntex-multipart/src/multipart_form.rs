@@ -77,15 +77,6 @@ impl MultipartFormConfig {
         self
     }
 
-    /// Sets custom error handler.
-    pub fn error_handler<F>(mut self, f: F) -> Self
-    where
-        F: Fn(MultipartError, &HttpRequest) -> Error + Send + Sync + 'static,
-    {
-        self.err_handler = Some(Arc::new(f));
-        self
-    }
-
     /// Extracts payload config from app data. Check both `T` and `Data<T>`, in that order, and fall
     /// back to the default payload config.
     pub(crate) fn from_req(req: &HttpRequest) -> &Self {
